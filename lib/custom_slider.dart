@@ -4,9 +4,15 @@ import 'constants.dart';
 
 class CustomSlider extends StatefulWidget {
   final Function(int)? onStrokeChange;
+  final double maxValue;
+  final double minValue;
+  final double defaultValue;
 
   const CustomSlider({
     this.onStrokeChange,
+    this.maxValue = 10,
+    this.minValue = 0,
+    this.defaultValue = 0,
   });
 
   @override
@@ -14,7 +20,14 @@ class CustomSlider extends StatefulWidget {
 }
 
 class _CustomSliderState extends State<CustomSlider> {
-  double _value = Constants.defaultStrokeWidth;
+  double _value = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    this._value = widget.defaultValue;
+  }
 
   void _changeStroke(double value) {
     if (mounted) {
@@ -48,10 +61,10 @@ class _CustomSliderState extends State<CustomSlider> {
               Expanded(
                 child: Slider(
                   value: _value,
-                  min: Constants.minStrokeSize,
-                  max: Constants.maxStrokeSize,
-                  divisions: Constants.maxStrokeSize.toInt() -
-                      Constants.minStrokeSize.toInt() +
+                  min: widget.minValue,
+                  max: widget.maxValue,
+                  divisions: widget.maxValue.toInt() -
+                    widget.minValue.toInt() +
                       1,
                   onChanged: _changeStroke,
                 ),

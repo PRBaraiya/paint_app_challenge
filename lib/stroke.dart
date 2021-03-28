@@ -1,7 +1,5 @@
 import 'dart:ui';
-
 import 'constants.dart';
-
 class Stroke {
   final List<Offset> points;
   final Color color;
