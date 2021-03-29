@@ -15,8 +15,12 @@ class Constants {
 
   static const double menuIconInitialXAlignment = 0.9;
   static const double menuIconInitialYAlignment = 0.95;
+
   static const double strokeWidthIconVisibleAlignment = 0.55;
   static const double strokeColorIconVisibleAlignment = 0.75;
+
+  static const double strokeUndoIconVisibleAlignment = 0.35;
+  static const double strokeCleanIconVisibleAlignment = 0.15;
 
   static const double strokeSliderVisibleAlignment = -0.9;
   static const double strokeSliderHiddenAlignment = -1.2;

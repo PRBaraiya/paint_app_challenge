@@ -15,14 +15,20 @@ class _HomeState extends State<Home> {
   bool _menuExpanded = false;
   bool _changingStrokes = false;
 
-  _FABAllignmentNotifier _widthIconAlignmentNotifier =
-      _FABAllignmentNotifier(Constants.menuIconInitialYAlignment);
+  _FABAlignmentNotifier _widthIconAlignmentNotifier =
+      _FABAlignmentNotifier(Constants.menuIconInitialYAlignment);
 
-  _FABAllignmentNotifier _colorIconAlignmentNotifier =
-      _FABAllignmentNotifier(Constants.menuIconInitialYAlignment);
+  _FABAlignmentNotifier _colorIconAlignmentNotifier =
+      _FABAlignmentNotifier(Constants.menuIconInitialYAlignment);
 
-  _FABAllignmentNotifier _strokeRangeAlignmentNotifier =
-      _FABAllignmentNotifier(Constants.strokeSliderHiddenAlignment);
+  _FABAlignmentNotifier _strokeRangeAlignmentNotifier =
+      _FABAlignmentNotifier(Constants.strokeSliderHiddenAlignment);
+
+  _FABAlignmentNotifier _undoStrokeAlignmentNotifier =
+      _FABAlignmentNotifier(Constants.menuIconInitialYAlignment);
+
+  _FABAlignmentNotifier _cleanStrokesAlignmentNotifier =
+      _FABAlignmentNotifier(Constants.menuIconInitialYAlignment);
 
   _PaintingStrokeProvider _paintDataProvider = _PaintingStrokeProvider();
 
@@ -33,8 +39,9 @@ class _HomeState extends State<Home> {
   double _menuIconXAlignment = Constants.menuIconInitialXAlignment;
   double _menuIconYAlignment = Constants.menuIconInitialYAlignment;
 
-  int _currentStrokeWidth = Constants.defaultStrokeWidth.toInt();
   Color _currentStrokeColor = Constants.defaultStrokeColor;
+
+  double _currentStrokeWidth = Constants.defaultStrokeWidth;
 
   void _showStrokeChanger() {
     _strokeRangeAlignmentNotifier
@@ -62,16 +69,22 @@ class _HomeState extends State<Home> {
         .update(Constants.strokeColorIconVisibleAlignment);
     _widthIconAlignmentNotifier
         .update(Constants.strokeWidthIconVisibleAlignment);
+    _undoStrokeAlignmentNotifier
+        .update(Constants.strokeUndoIconVisibleAlignment);
+    _cleanStrokesAlignmentNotifier
+        .update(Constants.strokeCleanIconVisibleAlignment);
     this._menuExpanded = true;
   }
 
   void _hideMenu() {
     _colorIconAlignmentNotifier.update(Constants.menuIconInitialYAlignment);
     _widthIconAlignmentNotifier.update(Constants.menuIconInitialYAlignment);
+    _undoStrokeAlignmentNotifier.update(Constants.menuIconInitialYAlignment);
+    _cleanStrokesAlignmentNotifier.update(Constants.menuIconInitialYAlignment);
     this._menuExpanded = false;
   }
 
-  void _toogleMenu() {
+  void _toggleMenu() {
     if (this._menuExpanded)
       _hideMenu();
     else
@@ -80,10 +93,14 @@ class _HomeState extends State<Home> {
 
   void _changeStrokeColor(Color color) => this._currentStrokeColor = color;
 
-  void _changeStrokeWidth(int value) => _currentStrokeWidth = value;
+  void _changeStrokeWidth(int value) {
+    _currentStrokeWidth = value.toDouble();
+  }
 
-  void _displayColor() async {
-    await showDialog(
+  void _displayColor() {
+    _hideMenu();
+
+    showDialog(
       context: context,
       barrierColor: Colors.black26,
       builder: (_) => Dialog(
@@ -140,31 +157,35 @@ class _HomeState extends State<Home> {
             children: [
               Listener(
                 onPointerDown: (details) {
-                  print("Pointer Down.");
                   if (this._changingStrokes)
                     _hideStrokeChanger();
                   else if (this._menuExpanded)
                     _hideMenu();
                   else {
-                     // Initialize new Stroke Instance and add it to [_paintDataProvider]
+                    _paintDataProvider.addStroke(
+                      Stroke(
+                        points: [details.localPosition],
+                        color: _currentStrokeColor,
+                        width: _currentStrokeWidth,
+                      ),
+                      details.pointer,
+                    );
                   }
                 },
-                onPointerUp: (details) {
-                 // Add Null to Stroke.
-                  print("Pointer Up.");
-                },
                 onPointerMove: (details) {
-                  // Update Stroke points
-                  print("Pointer Move.");
+                  _paintDataProvider.addPoint(
+                      details.localPosition, details.pointer);
                 },
                 child: Container(
                   height: MediaQuery.of(context).size.height,
                   width: MediaQuery.of(context).size.width,
-                  child: ValueListenableBuilder(
+                  child: ValueListenableBuilder<Map<int, Stroke>>(
                     valueListenable: _paintDataProvider,
                     builder: (_, value, __) {
                       return CustomPaint(
-                        painter: CanvasPainter(),
+                        painter: CanvasPainter(
+                          strokes: _paintDataProvider.strokes,
+                        ),
                       );
                     },
                   ),
@@ -172,6 +193,42 @@ class _HomeState extends State<Home> {
               ),
               Stack(
                 children: [
+                  ValueListenableBuilder<double>(
+                    valueListenable: _cleanStrokesAlignmentNotifier,
+                    builder: (_, value, __) => AnimatedAlign(
+                      alignment: Alignment(_strokeWidthIconXAlignment, value),
+                      duration: Constants.defaultAnimationDuration,
+                      curve: this._menuExpanded
+                          ? Constants.defaultAnimationCurve
+                          : Curves.linear,
+                      child: FloatingActionButton(
+                        elevation: this._menuExpanded ? 6 : 0,
+                        onPressed: _paintDataProvider.reset,
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 30.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  ValueListenableBuilder<double>(
+                    valueListenable: _undoStrokeAlignmentNotifier,
+                    builder: (_, value, __) => AnimatedAlign(
+                      alignment: Alignment(_strokeWidthIconXAlignment, value),
+                      duration: Constants.defaultAnimationDuration,
+                      curve: this._menuExpanded
+                          ? Constants.defaultAnimationCurve
+                          : Curves.linear,
+                      child: FloatingActionButton(
+                        elevation: this._menuExpanded ? 6 : 0,
+                        onPressed: _paintDataProvider.undo,
+                        child: Icon(
+                          Icons.undo_rounded,
+                          size: 30.0,
+                        ),
+                      ),
+                    ),
+                  ),
                   ValueListenableBuilder<double>(
                     valueListenable: _widthIconAlignmentNotifier,
                     builder: (_, value, __) => AnimatedAlign(
@@ -216,7 +273,7 @@ class _HomeState extends State<Home> {
                       alignment:
                           Alignment(_menuIconXAlignment, _menuIconYAlignment),
                       child: FloatingActionButton(
-                        onPressed: _toogleMenu,
+                        onPressed: _toggleMenu,
                         child: Icon(
                           this._menuExpanded
                               ? Icons.keyboard_arrow_down_rounded
@@ -250,8 +307,8 @@ class _HomeState extends State<Home> {
   }
 }
 
-class _FABAllignmentNotifier extends ValueNotifier<double> {
-  _FABAllignmentNotifier(double value) : super(value);
+class _FABAlignmentNotifier extends ValueNotifier<double> {
+  _FABAlignmentNotifier(double value) : super(value);
 
   void update(double newValue) {
     if (newValue != this.value) {
@@ -261,17 +318,29 @@ class _FABAllignmentNotifier extends ValueNotifier<double> {
   }
 }
 
-class _PaintingStrokeProvider extends ValueNotifier<List<Stroke>> {
-  _PaintingStrokeProvider() : super([]);
+class _PaintingStrokeProvider extends ValueNotifier<Map<int, Stroke>> {
+  _PaintingStrokeProvider() : super({});
 
-  void add(Stroke stroke) {
-    value.add(stroke);
+  List<Stroke> get strokes => value.values.toList();
+
+  void addStroke(Stroke stroke, int pointer) {
+    value.addAll({pointer: stroke});
+    notifyListeners();
+  }
+
+  void addPoint(Offset point, int pointer) {
+    value[pointer]?.points.add(point);
     notifyListeners();
   }
 
   void undo() {
-    value.removeLast();
-    notifyListeners();
+    try {
+      List keys = value.keys.toList();
+      keys.sort();
+      int last = keys.last;
+      value.remove(last);
+      notifyListeners();
+    } catch (e) {}
   }
 
   void reset() {

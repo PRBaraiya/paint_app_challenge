@@ -10,9 +10,7 @@ class _PaintCanvasState extends State<PaintCanvas> {
   @override
   Widget build(BuildContext context) {
     return Listener(
-      onPointerDown: (details) {
-        print("Hey There");
-      },
+      onPointerDown: (details) {},
       child: Container(
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
